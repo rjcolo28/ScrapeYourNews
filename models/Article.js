@@ -8,8 +8,7 @@ var ArticleSchema = new Schema({
     required: true
   },
   summary: {
-      type:String,
-      maxlength: 200
+      type:String
   },
   link: {
     type: String,

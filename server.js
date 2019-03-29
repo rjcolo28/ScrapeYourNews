@@ -18,23 +18,22 @@ app.use(express.static("public"));
 
 var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines";
 
-// Routes
+mongoose.connect(MONGODB_URI);
 
 app.get("/scrape", function(req, res) {
-  
-  axios.get("http://www.echojs.com/").then(function(response) {
+  axios.get("https://www.npr.org/sections/world/").then(function(response) {
     var $ = cheerio.load(response.data);
-
-    $("article h2").each(function(i, element) {
+    $(".item-info").each(function(i, element) {
       var result = {};
-
-      result.title = $(this)
-        .children("a")
+      result.headline = $(this)
+        .children(".title")
+        .text();
+      result.summary = $(this)
+        .children("p")
         .text();
       result.link = $(this)
-        .children("a")
+        .children("h2").children("a")
         .attr("href");
-
       db.Article.create(result)
         .then(function(dbArticle) {
           console.log(dbArticle);
@@ -43,7 +42,6 @@ app.get("/scrape", function(req, res) {
           console.log(err);
         });
     });
-
     res.send("Scrape Complete");
   });
 });
@@ -57,6 +55,30 @@ app.get("/articles", function(req, res) {
     .catch(function(err) {
       res.json(err)
     })
+});
+
+app.get("/articles/:id", function(req, res) {
+  db.Article.findOne({ _id: req.params.id })
+    .populate("comment")
+    .then(function(dbArticle) {
+      res.json(dbArticle);
+    })
+    .catch(function(err) {
+      res.json(err);
+    });
+});
+
+app.post("/articles/:id", function(req, res) {
+  db.Note.create(req.body)
+    .then(function(dbNote) {
+      return db.Article.findOneAndUpdate({ _id: req.params.id }, { note: dbNote._id }, { new: true });
+    })
+    .then(function(dbArticle) {
+      res.json(dbArticle);
+    })
+    .catch(function(err) {
+      res.json(err);
+    });
 });
 
 app.listen(PORT, function() {
