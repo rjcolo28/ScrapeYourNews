@@ -1,6 +1,7 @@
 var express = require("express");
 var logger = require("morgan");
 var mongoose = require("mongoose");
+var path = require("path");
 
 var axios = require("axios");
 var cheerio = require("cheerio");
@@ -22,6 +23,10 @@ app.set("views", path.join(__dirname, "views"));
 var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines";
 
 mongoose.connect(MONGODB_URI);
+
+app.get("/", function(req, res){
+  res.render("index");
+  });
 
 app.get("/scrape", function(req, res) {
   axios.get("https://www.npr.org/sections/world/").then(function(response) {
@@ -60,9 +65,29 @@ app.get("/articles", function(req, res) {
     })
 });
 
+// Supposed to populate comment section with previous comments
 app.get("/articles/:id", function(req, res) {
   db.Article.findOne({ _id: req.params.id })
-    .populate("comment")
+    .populate("comments")
+    .then(function(dbArticle) {
+      res.json(dbArticle);
+    })
+    .catch(function(err) {
+      console.log('route error is', err);
+      res.json(err);
+    });
+});
+
+// Supposed to populate specific article models with comments associated with article ID
+app.post("/articles/:id", function(req, res) {
+  db.Comment.create(req.body)
+    .then(dbComment => {
+      return db.Article.findOneAndUpdate(
+        { _id: req.params.id },
+        { comment: dbComment.id },
+        { new: true }
+      );
+    })
     .then(function(dbArticle) {
       res.json(dbArticle);
     })
@@ -71,19 +96,22 @@ app.get("/articles/:id", function(req, res) {
     });
 });
 
-app.post("/articles/:id", function(req, res) {
-  db.Note.create(req.body)
-    .then(function(dbNote) {
-      return db.Article.findOneAndUpdate({ _id: req.params.id }, { note: dbNote._id }, { new: true });
-    })
-    .then(function(dbArticle) {
-      res.json(dbArticle);
-    })
-    .catch(function(err) {
-      res.json(err);
-    });
+app.get("/delete/:id", function(req,res) {
+  db.Article.findOneAndUpdate(
+    { _id: req.params.id },
+    { $unset: { comment: 1 } },
+    (err, result) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).send(err);
+      } else {
+        console.log('success');
+        return res.status(200).send(result);
+      }
+    }
+  );
 });
 
 app.listen(PORT, function() {
     console.log("App running on port " + PORT + "!");
-  });  
+  });
