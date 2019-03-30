@@ -16,10 +16,10 @@ $.getJSON("/articles", function(data) {
         $("#comments").append("<h2>" + data.title + "</h2>");
         $("#comments").append("<input id='titleinput' name='title' >");
         $("#comments").append("<textarea id='bodyinput' name='body'></textarea>");
-        $("#comments").append("<button data-id='" + data._id + "' id='savecomment'>Save Note</button>");
-        if (data.note) {
-          $("#titleinput").val(data.note.title);
-          $("#bodyinput").val(data.note.body);
+        $("#comments").append("<button data-id='" + data._id + "' id='savecomment'>Save Comment</button>");
+        if (data.comment) {
+          $("#titleinput").val(data.comment.title);
+          $("#bodyinput").val(data.comment.body);
         }
       });
   });
@@ -41,4 +41,3 @@ $.getJSON("/articles", function(data) {
     $("#titleinput").val("");
     $("#bodyinput").val("");
   });
-  
